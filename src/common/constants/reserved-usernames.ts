@@ -1,0 +1,15 @@
+export const RESERVED_USERNAMES: string[] = [
+  'admin',
+  'api',
+  'auth',
+  'login',
+  'register',
+  'dashboard',
+  'settings',
+  'tools',
+  'links',
+  'orsoft',
+  'public',
+  'user',
+  'users',
+];
