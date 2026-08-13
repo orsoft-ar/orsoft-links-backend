@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, IsUrl, MaxLength, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { IsLinkUrl } from '../../common/decorators/is-link-url.decorator';
 
 export class UpdateLinkDto {
   @ApiPropertyOptional({ example: 'Mi Nuevo Portfolio' })
@@ -10,10 +11,7 @@ export class UpdateLinkDto {
 
   @ApiPropertyOptional({ example: 'https://ejemplo.com/nuevo' })
   @IsOptional()
-  @IsUrl(
-    { require_protocol: true, protocols: ['http', 'https', 'mailto', 'tel'] },
-    { message: 'La URL debe ser http://, https://, mailto: o tel: valida' },
-  )
+  @IsLinkUrl({ message: 'La URL debe ser http://, https://, mailto: o tel: valida' })
   @MaxLength(500)
   url?: string;
 
