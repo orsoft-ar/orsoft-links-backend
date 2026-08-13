@@ -57,4 +57,21 @@ export class PublicService {
       })),
     };
   }
+
+  async getSitemapPages(): Promise<
+    Array<{ username: string; updatedAt: Date }>
+  > {
+    const pages = await this.linkPagesRepository
+      .createQueryBuilder('page')
+      .select('page.username', 'username')
+      .addSelect('page.updatedAt', 'updatedAt')
+      .where('page.isPublic = :isPublic', { isPublic: true })
+      .orderBy('page.updatedAt', 'DESC')
+      .getRawMany();
+
+    return pages.map((page) => ({
+      username: page.username,
+      updatedAt: page.updatedAt,
+    }));
+  }
 }
