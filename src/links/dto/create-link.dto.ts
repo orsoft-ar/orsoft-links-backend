@@ -10,8 +10,8 @@ export class CreateLinkDto {
 
   @ApiProperty({ example: 'https://ejemplo.com' })
   @IsUrl(
-    { require_protocol: true, protocols: ['http', 'https'] },
-    { message: 'La URL debe ser http:// o https:// valida' },
+    { require_protocol: true, protocols: ['http', 'https', 'mailto', 'tel'] },
+    { message: 'La URL debe ser http://, https://, mailto: o tel: valida' },
   )
   @MaxLength(500)
   url: string;
