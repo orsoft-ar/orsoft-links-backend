@@ -1,0 +1,15 @@
+name: keep-alive
+
+on:
+  schedule:
+    - cron: '*/4 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend (Render + Neon)
+        run: curl -fsS -o /dev/null --max-time 60 "https://orsoft-links-backend.onrender.com/api/public/sitemap.xml"
+      - name: Ping frontend (Vercel)
+        run: curl -fsS -o /dev/null --max-time 30 "https://linkorsoft.site"
