@@ -11,7 +11,16 @@ import { PublicModule } from '../src/public/public.module';
 import { UsersModule } from '../src/users/users.module';
 
 export const testImports = [
-  ConfigModule.forRoot({ isGlobal: true }),
+  ConfigModule.forRoot({
+    isGlobal: true,
+    load: [
+      () => ({
+        JWT_SECRET: 'test-jwt-secret-must-be-32-chars-long-123456',
+        JWT_EXPIRES_IN: '7d',
+        NODE_ENV: 'test',
+      }),
+    ],
+  }),
   TypeOrmModule.forRoot({
     type: 'better-sqlite3',
     database: ':memory:',

@@ -30,6 +30,7 @@ export class PublicController {
   @Public()
   @Get('sitemap.xml')
   @Header('Content-Type', 'application/xml; charset=utf-8')
+  @Header('Cache-Control', 'public, max-age=3600, must-revalidate')
   @ApiOperation({ summary: 'Sitemap XML con las paginas publicas' })
   @ApiResponse({ status: 200, description: 'Sitemap en formato XML' })
   async getSitemap(): Promise<string> {
@@ -38,24 +39,10 @@ export class PublicController {
       'https://linkorsoft.site'
     ).replace(/\/$/, '');
 
-    const pages = await this.publicService.getSitemapPages();
+    const pages = await this.publicService.getSitemapPages(5000);
 
-    const staticEntries = [
-      { path: '/', lastmod: undefined, priority: '1.0' },
-      { path: '/login', lastmod: undefined, priority: '0.3' },
-      { path: '/register', lastmod: undefined, priority: '0.5' },
-    ];
-
-    const entries = [
-      ...staticEntries.map((entry) => {
-        const lastmod = entry.lastmod ? `<lastmod>${entry.lastmod}</lastmod>\n` : '';
-        return `  <url>
-    <loc>${frontendUrl}${entry.path}</loc>
-${lastmod}    <changefreq>weekly</changefreq>
-    <priority>${entry.priority}</priority>
-  </url>`;
-      }),
-      ...pages.map((page) => {
+    const entries = pages
+      .map((page) => {
         const lastmod = page.updatedAt.toISOString();
         return `  <url>
     <loc>${frontendUrl}/${escapeXml(page.username)}</loc>
@@ -63,11 +50,18 @@ ${lastmod}    <changefreq>weekly</changefreq>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`;
-      }),
-    ].join('\n');
+      })
+      .join('\n');
+
+    const home = `  <url>
+    <loc>${frontendUrl}/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>`;
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${home}
 ${entries}
 </urlset>
 `;

@@ -32,10 +32,11 @@ export class PublicService {
 
     const page = await this.linkPagesRepository
       .createQueryBuilder('page')
-      .leftJoinAndSelect('page.links', 'link')
+      .leftJoinAndSelect('page.links', 'link', 'link.active = :active', {
+        active: true,
+      })
       .where('page.username = :username', { username: normalizedUsername })
       .andWhere('page.isPublic = :isPublic', { isPublic: true })
-      .andWhere('link.active = :active', { active: true })
       .orderBy('link.position', 'ASC')
       .getOne();
 
@@ -58,20 +59,20 @@ export class PublicService {
     };
   }
 
-  async getSitemapPages(): Promise<
-    Array<{ username: string; updatedAt: Date }>
-  > {
+  async getSitemapPages(limit = 5000): Promise<Array<{ username: string; updatedAt: Date }>> {
+    const safeLimit = Math.min(Math.max(limit, 1), 5000);
     const pages = await this.linkPagesRepository
       .createQueryBuilder('page')
       .select('page.username', 'username')
       .addSelect('page.updatedAt', 'updatedAt')
       .where('page.isPublic = :isPublic', { isPublic: true })
       .orderBy('page.updatedAt', 'DESC')
+      .take(safeLimit)
       .getRawMany();
 
     return pages.map((page) => ({
       username: page.username,
-      updatedAt: page.updatedAt,
+      updatedAt: page.updatedAt instanceof Date ? page.updatedAt : new Date(page.updatedAt),
     }));
   }
 }

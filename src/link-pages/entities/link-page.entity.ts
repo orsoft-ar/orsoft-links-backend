@@ -19,7 +19,8 @@ export class LinkPage {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'userId' })
+  @Index('UQ_link_pages_userId', { unique: true })
+  @Column({ name: 'userId', unique: true })
   userId: number;
 
   @OneToOne(() => User, { onDelete: 'CASCADE', nullable: false })

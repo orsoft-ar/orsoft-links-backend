@@ -2,10 +2,12 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LinkPage } from '../link-pages/entities/link-page.entity';
 import { Link } from './entities/link.entity';
+import { LinksController } from './links.controller';
 import { LinksService } from './links.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Link, LinkPage])],
+  controllers: [LinksController],
   providers: [LinksService],
   exports: [LinksService],
 })

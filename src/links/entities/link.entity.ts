@@ -42,7 +42,7 @@ export class Link {
 
   @ApiProperty({ example: 2 })
   @Index('IDX_links_position')
-  @Column({ type: 'int', default: 0 })
+  @Column({ type: 'int', default: 1 })
   position: number;
 
   @ApiProperty({ example: true })

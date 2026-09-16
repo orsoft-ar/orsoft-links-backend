@@ -1,6 +1,6 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { LinkPage } from '../link-pages/entities/link-page.entity';
 import { CreateLinkDto } from './dto/create-link.dto';
 import { ReorderLinksDto } from './dto/reorder-links.dto';
@@ -15,6 +15,7 @@ export class LinksService {
     private readonly linksRepository: Repository<Link>,
     @InjectRepository(LinkPage)
     private readonly linkPagesRepository: Repository<LinkPage>,
+    private readonly dataSource: DataSource,
   ) {}
 
   private async findOwnedPage(userId: number): Promise<LinkPage> {
@@ -27,9 +28,6 @@ export class LinksService {
 
   async getMyLinks(userId: number): Promise<Link[]> {
     const page = await this.findOwnedPage(userId);
-    if (!page) {
-      throw new NotFoundException('Aun no tienes una pagina de links');
-    }
     return this.linksRepository.find({
       where: { linkPageId: page.id },
       order: { position: 'ASC' },
@@ -37,26 +35,36 @@ export class LinksService {
   }
 
   async create(userId: number, dto: CreateLinkDto): Promise<Link> {
-    const page = await this.findOwnedPage(userId);
-    if (!page) {
-      throw new NotFoundException('Aun no tienes una pagina de links');
-    }
+    return this.dataSource.transaction(async (manager) => {
+      const linkPagesRepo = manager.getRepository(LinkPage);
+      const linksRepo = manager.getRepository(Link);
 
-    const lastLink = await this.linksRepository.findOne({
-      where: { linkPageId: page.id },
-      order: { position: 'DESC' },
+      const page = await linkPagesRepo.findOne({ where: { userId } });
+      if (!page) {
+        throw new NotFoundException('Aun no tienes una pagina de links');
+      }
+
+      const lastLink = await linksRepo.findOne({
+        where: { linkPageId: page.id },
+        order: { position: 'DESC' },
+      });
+
+      const total = await linksRepo.count({ where: { linkPageId: page.id } });
+      if (total >= 50) {
+        throw new BadRequestException('Máximo 50 links por página');
+      }
+
+      const link = linksRepo.create({
+        linkPageId: page.id,
+        title: dto.title,
+        url: dto.url,
+        icon: dto.icon ?? 'globe',
+        position: lastLink ? lastLink.position + 1 : 1,
+        active: true,
+      });
+
+      return linksRepo.save(link);
     });
-
-    const link = this.linksRepository.create({
-      linkPageId: page.id,
-      title: dto.title,
-      url: dto.url,
-      icon: dto.icon ?? 'globe',
-      position: lastLink ? lastLink.position + 1 : 1,
-      active: true,
-    });
-
-    return this.linksRepository.save(link);
   }
 
   async update(userId: number, linkId: number, dto: UpdateLinkDto): Promise<Link> {
@@ -87,36 +95,49 @@ export class LinksService {
   }
 
   async reorder(userId: number, dto: ReorderLinksDto): Promise<Link[]> {
-    const page = await this.findOwnedPage(userId);
-
-    const existingLinks = await this.linksRepository.find({
-      where: { id: In(dto.links.map((item) => item.id)) },
-      relations: { linkPage: true },
-    });
-
-    const foundIds = new Set(existingLinks.map((link) => link.id));
-
-    for (const item of dto.links) {
-      if (!foundIds.has(item.id)) {
-        throw new NotFoundException('Uno o mas links no existen');
-      }
-      const link = existingLinks.find((l) => l.id === item.id);
-      if (link.linkPage.userId !== userId) {
-        throw new ForbiddenException('No tienes permiso para modificar ese link');
-      }
+    const positions = dto.links.map((l) => l.position);
+    if (new Set(positions).size !== positions.length) {
+      throw new BadRequestException('Posiciones duplicadas');
     }
 
-    const positionById = new Map(dto.links.map((item) => [item.id, item.position]));
+    return this.dataSource.transaction(async (manager) => {
+      const linkPagesRepo = manager.getRepository(LinkPage);
+      const linksRepo = manager.getRepository(Link);
 
-    for (const link of existingLinks) {
-      link.position = positionById.get(link.id);
-    }
+      const page = await linkPagesRepo.findOne({ where: { userId } });
+      if (!page) throw new NotFoundException('Aun no tienes una pagina de links');
 
-    await this.linksRepository.save(existingLinks);
+      const existingLinks = await linksRepo.find({
+        where: { id: In(dto.links.map((item) => item.id)) },
+        relations: { linkPage: true },
+      });
 
-    return this.linksRepository.find({
-      where: { linkPageId: page.id },
-      order: { position: 'ASC' },
+      const foundIds = new Set(existingLinks.map((link) => link.id));
+
+      for (const item of dto.links) {
+        if (!foundIds.has(item.id)) {
+          throw new NotFoundException('Uno o mas links no existen');
+        }
+        const link = existingLinks.find((l) => l.id === item.id)!;
+        if (link.linkPage.userId !== userId) {
+          throw new ForbiddenException('No tienes permiso para modificar ese link');
+        }
+      }
+
+      const positionById = new Map(dto.links.map((item) => [item.id, item.position]));
+
+      for (const link of existingLinks) {
+        const pos = positionById.get(link.id);
+        if (pos === undefined) throw new BadRequestException('Posición faltante');
+        link.position = pos;
+      }
+
+      await linksRepo.save(existingLinks);
+
+      return linksRepo.find({
+        where: { linkPageId: page.id },
+        order: { position: 'ASC' },
+      });
     });
   }
 

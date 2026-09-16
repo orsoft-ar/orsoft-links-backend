@@ -1,17 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEmail, IsNotEmpty, IsString, Length, Matches } from 'class-validator';
-import { normalizeUsername } from '../../common/utils/username.utils';
+import { IsEmail, IsNotEmpty, IsString, Length } from 'class-validator';
+import { IsUsername } from '../../common/decorators/is-username.decorator';
 
 export class RegisterDto {
   @ApiProperty({ example: 'mateo' })
-  @Transform(({ value }) => (typeof value === 'string' ? normalizeUsername(value) : value))
-  @IsString()
-  @IsNotEmpty()
-  @Length(3, 30, { message: 'El nombre de usuario debe tener entre 3 y 30 caracteres' })
-  @Matches(/^[a-z0-9_-]+$/, {
-    message: 'El nombre de usuario solo puede contener letras, numeros, _ y -',
-  })
+  @IsUsername()
   username: string;
 
   @ApiProperty({ example: 'mateo@orsoft.site' })

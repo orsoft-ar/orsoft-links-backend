@@ -1,6 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayNotEmpty, IsArray, IsInt, Min, ValidateNested } from 'class-validator';
+import {
+  ArrayMaxSize,
+  ArrayNotEmpty,
+  ArrayUnique,
+  IsArray,
+  IsInt,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 export class ReorderLinkItemDto {
   @ApiProperty({ example: 5 })
@@ -18,6 +26,8 @@ export class ReorderLinksDto {
   @ApiProperty({ type: [ReorderLinkItemDto] })
   @IsArray()
   @ArrayNotEmpty({ message: 'Debes enviar al menos un link' })
+  @ArrayMaxSize(50, { message: 'Máximo 50 links por reorder' })
+  @ArrayUnique((o) => o.id, { message: 'IDs duplicados en reorder' })
   @ValidateNested({ each: true })
   @Type(() => ReorderLinkItemDto)
   links: ReorderLinkItemDto[];

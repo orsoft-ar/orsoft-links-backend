@@ -1,18 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsBoolean, IsOptional, IsString, IsUrl, Length, Matches, MaxLength } from 'class-validator';
-import { normalizeUsername } from '../../common/utils/username.utils';
+import { IsBoolean, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
+import { IsUsername } from '../../common/decorators/is-username.decorator';
 import { TrimmedUrl } from './create-link-page.dto';
 
 export class UpdateLinkPageDto {
   @ApiPropertyOptional({ example: 'mateo' })
-  @IsOptional()
-  @Transform(({ value }) => (typeof value === 'string' ? normalizeUsername(value) : value))
-  @IsString()
-  @Length(3, 30, { message: 'El nombre de usuario debe tener entre 3 y 30 caracteres' })
-  @Matches(/^[a-z0-9_-]+$/, {
-    message: 'El nombre de usuario solo puede contener letras, numeros, _ y -',
-  })
+  @IsUsername(true)
   username?: string;
 
   @ApiPropertyOptional({ example: 'Mateo Gerbaudo' })

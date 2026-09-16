@@ -4,10 +4,9 @@ import { LinkPagesController } from './link-pages.controller';
 import { LinkPagesService } from './link-pages.service';
 import { LinkPage } from './entities/link-page.entity';
 import { UsersModule } from '../users/users.module';
-import { LinksModule } from '../links/links.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([LinkPage]), UsersModule, LinksModule],
+  imports: [TypeOrmModule.forFeature([LinkPage]), UsersModule],
   controllers: [LinkPagesController],
   providers: [LinkPagesService],
   exports: [LinkPagesService],
